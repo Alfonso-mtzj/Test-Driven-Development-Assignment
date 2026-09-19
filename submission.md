@@ -63,7 +63,7 @@ TOTAL                   29      0     12      0   100%
 20 passed
 ```
 
-![Coverage summary — 100% statements, 100% branches](htmlcov/coverage_index.png)
+![Coverage summary — 100% statements, 100% branches](coverage_index.png)
 
 *(Full line-by-line detail page with every branch marked green: `htmlcov/coverage_detail.png` / `htmlcov/knight_cash_api_py.html`.)*
 
