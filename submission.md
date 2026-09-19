@@ -57,21 +57,19 @@ Final run:
 ```
 Name                 Stmts   Miss Branch BrPart  Cover   Missing
 ----------------------------------------------------------------
-knight_cash_api.py      29      0     12      0   100%
+knight_cash_api.py      26      0     12      0   100%
 ----------------------------------------------------------------
-TOTAL                   29      0     12      0   100%
+TOTAL                   26      0     12      0   100%
 20 passed
 ```
 
 ![Coverage summary — 100% statements, 100% branches](coverage_index.png)
 
-*(Full line-by-line detail page with every branch marked green: `htmlcov/coverage_detail.png` / `htmlcov/knight_cash_api_py.html`.)*
-
 If your course's submission tool wants a screenshot taken from your own
 machine instead of this generated one, just re-run:
 
 ```bash
-pytest --cov=knight_cash_api --cov-report=html --cov-branch
+py -m pytest --cov=knight_cash_api --cov-report=html --cov-branch
 ```
 
 and open `htmlcov/index.html` in a browser.
@@ -89,8 +87,9 @@ false side of that boundary condition.
 
 ## 4. GitHub Link
 
- (`https://github.com/Alfonso-mtzj/Test-Driven-Development-Assignment`),
-containing:
+ **Repository:** https://github.com/Alfonso-mtzj/Test-Driven-Development-Assignment
+
+Containing:
 - `knight_cash_api.py` (fixed)
 - `test_knight_cash.py` (final suite, 20 tests / 100% branch coverage)
 - `htmlcov/` or the screenshot from Section 2
