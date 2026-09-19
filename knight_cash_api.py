@@ -1,14 +1,12 @@
 """
-KnightCash API — v1 (as delivered by the original developer)
-
-"It works perfectly." — original dev, probably lying.
+KnightCash API — v2 (fixed)
 
 A tiny in-memory banking API for UCF students.
 Endpoints:
     GET  /balance/{account_id}
     POST /transfer
 """
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 app = FastAPI(title="KnightCash API")
@@ -29,26 +27,44 @@ class TransferRequest(BaseModel):
 
 @app.get("/balance/{account_id}")
 def get_balance(account_id: str):
-    # Bug: no existence check -> raw KeyError -> FastAPI 500 with a
-    # traceback that leaks the in-memory dict structure to the caller.
+    if account_id not in accounts:
+        # Fix (Bug #3 — data leakage): return a clean 404 instead of
+        # letting a raw KeyError bubble up into a 500 traceback that
+        # exposes the shape of the in-memory ledger.
+        raise HTTPException(status_code=404, detail="Account not found")
+
     balance = accounts[account_id]
-    return {"account_id": account_id, "balance": balance}
+    return {"account_id": account_id, "balance": round(balance, 2)}
 
 
 @app.post("/transfer")
 def transfer(req: TransferRequest):
-    # Bug 1: no check that amount > 0. A "transfer" of -50 subtracts
-    # -50 (i.e. ADDS 50) from the sender and adds -50 to the receiver,
-    # letting a user mint money out of thin air.
-    #
-    # Bug 2: no check that from_account has sufficient funds. Any
-    # account can go arbitrarily negative — free overdraft forever.
-    #
-    # Bug 3: no check that from_account != to_account. Transferring to
-    # yourself is a silent no-op that still returns 200 OK, masking
-    # what should probably be a 400.
-    accounts[req.from_account] -= req.amount
-    accounts[req.to_account] += req.amount
+    # Fix (Bug #1 — money minting): reject non-positive amounts. A
+    # "transfer" of $0 or less can never move real value, and a
+    # negative amount would otherwise let a user mint funds by
+    # subtracting a negative number from their own balance.
+    if req.amount <= 0:
+        raise HTTPException(status_code=400, detail="Amount must be greater than 0")
+
+    if req.from_account == req.to_account:
+        raise HTTPException(status_code=400, detail="Cannot transfer to the same account")
+
+    if req.from_account not in accounts:
+        raise HTTPException(status_code=404, detail="Sending account not found")
+    if req.to_account not in accounts:
+        raise HTTPException(status_code=404, detail="Receiving account not found")
+
+    # Fix (Bug #2 — infinite overdraft): reject transfers that exceed
+    # the sender's available balance. Compare against a rounded value
+    # so a fractional cent of float noise doesn't wrongly block a
+    # "transfer full balance" request.
+    if round(req.amount, 2) > round(accounts[req.from_account], 2):
+        raise HTTPException(status_code=400, detail="Insufficient funds")
+
+    # Fix (float precision): round every ledger write to the cent so
+    # balances never drift into 89.99499999999999-style float dust.
+    accounts[req.from_account] = round(accounts[req.from_account] - req.amount, 2)
+    accounts[req.to_account] = round(accounts[req.to_account] + req.amount, 2)
 
     return {
         "status": "success",
